@@ -10,7 +10,9 @@
     "seed": "node prisma/seed.js",
     "prisma:generate": "npx prisma generate",
     "prisma:push": "npx prisma db push",
-    "scrape:test": "node scripts/fetch.js"
+    "fetch:test": "node scripts/fetch.js",
+    "pipeline:test": "node scripts/pipeline.js",
+    "pipeline:test:subset": "node scripts/pipeline.js uiux product"
   },
   "keywords": [
     "design",
