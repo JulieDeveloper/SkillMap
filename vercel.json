@@ -1,0 +1,7 @@
+{
+  "rewrites": [
+    { "source": "/api/skills", "destination": "/api/skills.js" },
+    { "source": "/api/trends", "destination": "/api/trends.js" },
+    { "source": "/api/scrape", "destination": "/api/scrape.js" }
+  ]
+}

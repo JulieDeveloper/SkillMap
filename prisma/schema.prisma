@@ -1,0 +1,35 @@
+// Prisma schema for SkillMap — MongoDB + Node.js + Express
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// Skill data: individual skill counts per role, job type, and date
+model Skill {
+  id      String   @id @default(auto()) @map("_id") @db.ObjectId
+  role    String   // UI/UX Designer, Product Designer, etc.
+  skill   String   // Figma, Adobe XD, User Research, etc.
+  count   Int      // Number of job postings mentioning this skill
+  total   Int      // Total job postings fetched for this role in this snapshot
+  jobType String   // fulltime, parttime, contract, internship
+  date    DateTime @default(now()) // When this snapshot was taken
+
+  @@index([role, jobType, date])
+  @@index([role, date])
+  @@index([skill])
+}
+
+// API Quota tracking: remaining requests and jobs from RapidAPI
+model ApiQuota {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  requestsRemain Int      // Remaining API requests for the month
+  jobsRemain     Int      // Remaining job postings for the month
+  lastUpdated    DateTime @default(now()) // When quota was last checked/updated
+
+  @@index([lastUpdated])
+}
