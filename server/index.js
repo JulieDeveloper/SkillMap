@@ -3,6 +3,7 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { initCron } from '../scripts/cron.js';
+import apiRoutes from './routes.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -15,28 +16,14 @@ initCron();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Import cron trigger utility
-import { triggerCronManually } from '../scripts/cron.js';
-
-// Routes placeholder — will be filled in with /api/skills, /api/trends, /api/scrape
-// TODO: Import API routes here
+// Mount API routes
+app.use(apiRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'SkillMap server is running' });
 });
 
-// Manual cron trigger (for testing)
-app.post('/api/trigger-cron', async (req, res) => {
-  console.log('📡 Manual cron trigger requested');
-
-  try {
-    await triggerCronManually();
-    res.json({ status: 'success', message: 'Cron job triggered' });
-  } catch (error) {
-    res.status(500).json({ status: 'error', message: error.message });
-  }
-});
 
 // Root route — serve index.html
 app.get('/', (req, res) => {
