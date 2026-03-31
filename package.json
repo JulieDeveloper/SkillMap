@@ -12,7 +12,8 @@
     "prisma:push": "npx prisma db push",
     "fetch:test": "node scripts/fetch.js",
     "pipeline:test": "node scripts/pipeline.js",
-    "pipeline:test:subset": "node scripts/pipeline.js uiux product"
+    "pipeline:test:subset": "node scripts/pipeline.js uiux product",
+    "cron:test": "node scripts/cron.js"
   },
   "keywords": [
     "design",
