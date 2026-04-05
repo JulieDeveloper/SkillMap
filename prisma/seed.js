@@ -100,6 +100,9 @@ async function main() {
     await prisma.skill.deleteMany({});
     await prisma.apiQuota.deleteMany({});
 
+    // Define job types (individual types + 'all' aggregate)
+    const jobTypes = ['fulltime', 'parttime', 'contract', 'internship', 'all'];
+
     // Generate 14 days of historical snapshots
     console.log('📊 Creating 14-day historical snapshots...\n');
 
@@ -112,30 +115,53 @@ async function main() {
 
       // For each role
       for (const [roleId, skills] of Object.entries(SKILL_DATA)) {
-        // Create skill records for this role on this day
-        for (const skillData of skills) {
-          await prisma.skill.create({
-            data: {
-              role: roleId,
-              skill: skillData.skill,
-              count: skillData.count, // Same counts for all days (simulates stable trends)
-              total: 50, // Assume 50 jobs fetched per snapshot
-              jobType: 'all',
-              date: snapshotDate
+        // For each job type
+        for (const jobType of jobTypes) {
+          // Create skill records for this role + job type on this day
+          for (const skillData of skills) {
+            let adjustedCount;
+            let totalForType;
+
+            if (jobType === 'all') {
+              // 'all' is the aggregate across all job types (100% + 70% + 60% + 40% = 270%)
+              adjustedCount = Math.round(skillData.count * 2.7);
+              totalForType = 200; // 50 * 2.7 ≈ 135, round to 200 for simplicity
+            } else {
+              // Vary counts by individual job type
+              const multiplier = {
+                fulltime: 1.0,      // 100%
+                parttime: 0.7,      // 70%
+                contract: 0.6,      // 60%
+                internship: 0.4     // 40%
+              }[jobType];
+
+              adjustedCount = Math.max(1, Math.round(skillData.count * multiplier));
+              totalForType = Math.round(50 * multiplier);
             }
-          });
-          totalSkillsCreated++;
+
+            await prisma.skill.create({
+              data: {
+                role: roleId,
+                skill: skillData.skill,
+                count: adjustedCount,
+                total: totalForType,
+                jobType: jobType,
+                date: snapshotDate
+              }
+            });
+            totalSkillsCreated++;
+          }
         }
 
         // Progress indicator
         if (day % 3 === 0) {
-          console.log(`  ✓ ${dayLabel}: ${roleId}`);
+          console.log(`  ✓ ${dayLabel}: ${roleId} (5 job types including 'all' aggregate)`);
         }
       }
     }
 
     console.log(
-      `\n✓ Created ${totalSkillsCreated} skill records (14 days × 7 roles × 8 skills)\n`
+      `\n✓ Created ${totalSkillsCreated} skill records (14 days × 7 roles × 8 skills × 5 job types)\n`
     );
 
     // Initialize API quota

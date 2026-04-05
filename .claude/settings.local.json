@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(node --check scripts/fetch.js)",
+      "Bash(node scripts/transform.js)",
+      "Bash(node -e \":*)",
+      "mcp__figma__get_metadata",
+      "mcp__figma__use_figma",
+      "mcp__figma__get_screenshot",
+      "mcp__figma__search_design_system",
+      "Bash(pkill:*)",
+      "Bash(timeout 30 node prisma/seed.js)"
+    ]
+  }
+}

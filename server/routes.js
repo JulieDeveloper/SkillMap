@@ -41,16 +41,16 @@ router.get('/api/skills', async (req, res) => {
     }
 
     // Fetch top 10 skills for this role (latest snapshot)
-    // Get the most recent date for this role
+    // Get the most recent date for this role + job type
     const latestSnapshot = await prisma.skill.findFirst({
-      where: { role },
+      where: { role, jobType: type },
       orderBy: { date: 'desc' },
       select: { date: true }
     });
 
     if (!latestSnapshot) {
       return res.status(404).json({
-        error: `No data found for role: ${role}`
+        error: `No data found for role: ${role}, type: ${type}`
       });
     }
 
@@ -58,6 +58,7 @@ router.get('/api/skills', async (req, res) => {
     const skills = await prisma.skill.findMany({
       where: {
         role,
+        jobType: type,
         date: latestSnapshot.date
       },
       orderBy: { count: 'desc' },
@@ -123,6 +124,7 @@ router.get('/api/trends', async (req, res) => {
     const allSkills = await prisma.skill.findMany({
       where: {
         role,
+        jobType: 'all', // Trends show all job types combined
         date: {
           gte: thirtyDaysAgo
         }
