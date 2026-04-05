@@ -7,11 +7,106 @@
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <div id="app">
-    <h1>SkillMap</h1>
-    <p>Loading...</p>
+  <div id="app" class="container">
+    <!-- Header Section -->
+    <header class="header">
+      <h1 class="title">SkillMap</h1>
+      <p class="tagline">Skills in demand, updated daily</p>
+      <p class="timestamp" id="timestamp">Last updated: —</p>
+    </header>
+
+    <!-- Stats Row -->
+    <section class="stats">
+      <div class="stat-card">
+        <div class="stat-label">Total Job Postings</div>
+        <div class="stat-value" id="stat-jobs">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Skills Tracked</div>
+        <div class="stat-value" id="stat-skills">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Last Refresh</div>
+        <div class="stat-value" id="stat-refresh">—</div>
+      </div>
+    </section>
+
+    <!-- Controls -->
+    <section class="controls">
+      <div class="control-group">
+        <label for="role-select">Role:</label>
+        <select id="role-select">
+          <option value="uiux">UI/UX Designer</option>
+          <option value="product">Product Designer</option>
+          <option value="graphic">Graphic Designer</option>
+          <option value="experiential">Experiential Designer</option>
+          <option value="digital">Digital Designer</option>
+          <option value="visual">Visual Designer</option>
+          <option value="multidisciplinary">Multidisciplinary Designer</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label for="type-select">Job Type:</label>
+        <select id="type-select">
+          <option value="all">All Job Types</option>
+          <option value="fulltime">Full-time</option>
+          <option value="parttime">Part-time</option>
+          <option value="contract">Contract</option>
+          <option value="internship">Internship</option>
+        </select>
+      </div>
+    </section>
+
+    <!-- Tabs -->
+    <section class="tabs">
+      <div class="tab-buttons">
+        <button class="tab-button active" data-tab="skills">Skills Frequency</button>
+        <button class="tab-button" data-tab="trends">Trend Over Time</button>
+        <button class="tab-button" data-tab="gap">Skill Gap Checker</button>
+      </div>
+
+      <!-- Tab 1: Skills Frequency -->
+      <div id="skills-tab" class="tab-content active">
+        <h2>Top 10 Skills in Demand</h2>
+        <div id="skills-chart" class="chart-container">
+          <div class="loading">Loading skills data...</div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Trend Over Time -->
+      <div id="trends-tab" class="tab-content">
+        <h2>Skill Trends (Past 30 Days)</h2>
+        <div id="trends-chart" class="chart-container">
+          <div class="loading">Loading trends data...</div>
+        </div>
+      </div>
+
+      <!-- Tab 3: Skill Gap Checker -->
+      <div id="gap-tab" class="tab-content">
+        <h2>Check Your Skills</h2>
+        <div id="gap-checker" class="gap-container">
+          <div class="loading">Loading skills checklist...</div>
+        </div>
+        <div id="gap-score" class="gap-score">—</div>
+      </div>
+    </section>
+
+    <!-- API Quota Status (Debug) -->
+    <section class="quota-status">
+      <h3>API Quota Status</h3>
+      <p id="quota-info">Loading quota...</p>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p>Data source: <strong>Fantastic.jobs</strong> via RapidAPI</p>
+    </footer>
   </div>
+
+  <!-- Chart.js library -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- App script -->
   <script src="/app.js"></script>
 </body>
 </html>
