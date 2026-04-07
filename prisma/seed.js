@@ -1,191 +1,168 @@
-// seed.js — Seed MongoDB with 14 days of historical skill snapshots
+// seed.js — Seed MongoDB with 30 days of historical skill snapshots
 // Run with: npx prisma db seed
 
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// Skill reference data for each role (from CLAUDE.md)
+// Base skill counts per role — these are the "peak" values
 const SKILL_DATA = {
   uiux: [
-    { skill: 'Figma', count: 48 },
-    { skill: 'User Research', count: 42 },
-    { skill: 'Prototyping', count: 40 },
-    { skill: 'Usability Testing', count: 38 },
-    { skill: 'Design Systems', count: 36 },
-    { skill: 'Wireframing', count: 34 },
-    { skill: 'Accessibility', count: 32 },
-    { skill: 'Adobe XD', count: 28 }
+    { skill: 'Figma',            count: 48, trend:  1   },
+    { skill: 'User Research',    count: 42, trend:  0.5 },
+    { skill: 'Prototyping',      count: 40, trend:  2   },
+    { skill: 'Usability Testing',count: 38, trend: -0.5 },
+    { skill: 'Design Systems',   count: 36, trend:  1.5 },
+    { skill: 'Wireframing',      count: 34, trend: -1   },
+    { skill: 'Accessibility',    count: 32, trend:  0.8 },
+    { skill: 'Adobe XD',         count: 28, trend: -1.5 }
   ],
   product: [
-    { skill: 'Figma', count: 46 },
-    { skill: 'Design Systems', count: 42 },
-    { skill: 'Cross-functional Collaboration', count: 40 },
-    { skill: 'Prototyping', count: 38 },
-    { skill: 'Data-informed Design', count: 36 },
-    { skill: 'Accessibility', count: 34 },
-    { skill: 'User Research', count: 32 },
-    { skill: 'A/B Testing', count: 30 }
+    { skill: 'Figma',                        count: 46, trend:  1   },
+    { skill: 'Design Systems',               count: 42, trend:  1.5 },
+    { skill: 'Cross-functional Collaboration',count: 40, trend:  0.5 },
+    { skill: 'Prototyping',                  count: 38, trend:  0.8 },
+    { skill: 'Data-informed Design',         count: 36, trend:  2   },
+    { skill: 'Accessibility',                count: 34, trend:  0.5 },
+    { skill: 'User Research',                count: 32, trend: -0.5 },
+    { skill: 'A/B Testing',                  count: 30, trend:  1   }
   ],
   graphic: [
-    { skill: 'Adobe Illustrator', count: 44 },
-    { skill: 'Typography', count: 42 },
-    { skill: 'Adobe Photoshop', count: 40 },
-    { skill: 'Brand Strategy', count: 38 },
-    { skill: 'Adobe InDesign', count: 36 },
-    { skill: 'Figma', count: 32 },
-    { skill: 'Layout Design', count: 30 },
-    { skill: 'Color Theory', count: 28 }
+    { skill: 'Adobe Illustrator', count: 44, trend:  0   },
+    { skill: 'Typography',        count: 42, trend:  0.5 },
+    { skill: 'Adobe Photoshop',   count: 40, trend: -0.5 },
+    { skill: 'Brand Strategy',    count: 38, trend:  1.5 },
+    { skill: 'Adobe InDesign',    count: 36, trend: -0.5 },
+    { skill: 'Figma',             count: 32, trend:  2   },
+    { skill: 'Layout Design',     count: 30, trend:  0.5 },
+    { skill: 'Color Theory',      count: 28, trend: -0.5 }
   ],
   experiential: [
-    { skill: 'Concept Development', count: 40 },
-    { skill: 'User Journey Mapping', count: 38 },
-    { skill: 'Prototyping', count: 36 },
-    { skill: 'Interaction Design', count: 34 },
-    { skill: 'Figma', count: 32 },
-    { skill: 'Adobe XD', count: 30 },
-    { skill: 'Spatial Design', count: 28 },
-    { skill: 'Wayfinding', count: 26 }
+    { skill: 'Concept Development', count: 40, trend:  1   },
+    { skill: 'User Journey Mapping',count: 38, trend:  0.5 },
+    { skill: 'Prototyping',         count: 36, trend:  1.5 },
+    { skill: 'Interaction Design',  count: 34, trend:  2   },
+    { skill: 'Figma',               count: 32, trend:  1   },
+    { skill: 'Adobe XD',            count: 30, trend: -1   },
+    { skill: 'Spatial Design',      count: 28, trend:  0.5 },
+    { skill: 'Wayfinding',          count: 26, trend: -0.5 }
   ],
   digital: [
-    { skill: 'Figma', count: 46 },
-    { skill: 'Adobe XD', count: 42 },
-    { skill: 'HTML/CSS', count: 38 },
-    { skill: 'Responsive Design', count: 36 },
-    { skill: 'Design Systems', count: 34 },
-    { skill: 'Accessibility', count: 32 },
-    { skill: 'UI Design', count: 30 },
-    { skill: 'Adobe Photoshop', count: 28 }
+    { skill: 'Figma',             count: 46, trend:  1   },
+    { skill: 'Adobe XD',          count: 42, trend: -1   },
+    { skill: 'HTML/CSS',          count: 38, trend:  0.5 },
+    { skill: 'Responsive Design', count: 36, trend:  0.5 },
+    { skill: 'Design Systems',    count: 34, trend:  1.5 },
+    { skill: 'Accessibility',     count: 32, trend:  1   },
+    { skill: 'UI Design',         count: 30, trend:  0   },
+    { skill: 'Adobe Photoshop',   count: 28, trend: -0.5 }
   ],
   visual: [
-    { skill: 'Adobe Illustrator', count: 44 },
-    { skill: 'Adobe Photoshop', count: 42 },
-    { skill: 'Typography', count: 40 },
-    { skill: 'Color Theory', count: 38 },
-    { skill: 'Adobe InDesign', count: 36 },
-    { skill: 'Figma', count: 34 },
-    { skill: 'Branding', count: 32 },
-    { skill: 'Layout Design', count: 30 }
+    { skill: 'Adobe Illustrator', count: 44, trend:  0   },
+    { skill: 'Adobe Photoshop',   count: 42, trend: -0.5 },
+    { skill: 'Typography',        count: 40, trend:  0.5 },
+    { skill: 'Color Theory',      count: 38, trend:  0.5 },
+    { skill: 'Adobe InDesign',    count: 36, trend: -0.5 },
+    { skill: 'Figma',             count: 34, trend:  1.5 },
+    { skill: 'Branding',          count: 32, trend:  1   },
+    { skill: 'Layout Design',     count: 30, trend:  0   }
   ],
   multidisciplinary: [
-    { skill: 'Figma', count: 40 },
-    { skill: 'Adobe Creative Suite', count: 36 },
-    { skill: 'Project Management', count: 34 },
-    { skill: 'Communication', count: 32 },
-    { skill: 'Collaboration', count: 30 },
-    { skill: 'Adaptability', count: 28 },
-    { skill: 'Problem-solving', count: 26 },
-    { skill: 'Cross-functional Skills', count: 24 }
+    { skill: 'Figma',                 count: 40, trend:  1   },
+    { skill: 'Adobe Creative Suite',  count: 36, trend:  0   },
+    { skill: 'Project Management',    count: 34, trend:  1.5 },
+    { skill: 'Communication',         count: 32, trend:  0.5 },
+    { skill: 'Collaboration',         count: 30, trend:  0.5 },
+    { skill: 'Adaptability',          count: 28, trend:  1   },
+    { skill: 'Problem-solving',       count: 26, trend:  0.8 },
+    { skill: 'Cross-functional Skills',count: 24, trend:  0.5 }
   ]
 };
 
 /**
- * Generate a date string for N days ago
+ * Return a date object for N days ago (midnight UTC)
  */
-function getDaysAgo(daysAgo) {
-  const date = new Date();
-  date.setDate(date.getDate() - daysAgo);
-  return date;
+function getDaysAgo(n) {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() - n);
+  d.setUTCHours(0, 0, 0, 0);
+  return d;
 }
 
 /**
- * Seed the database with historical snapshots
+ * Add realistic daily noise to a count value.
+ * Uses a deterministic offset (skill name + day) so re-seeding is consistent,
+ * then overlays a slow linear trend defined per skill.
  */
+function variedCount(baseCount, trend, daysAgo) {
+  // Linear drift: trend is daily change rate; daysAgo=0 is today (peak),
+  // daysAgo=29 is 30 days back (start of window)
+  const driftFromPeak = trend * daysAgo * -1; // negative = past is lower
+
+  // Deterministic noise: ±10% of base, cycles every ~7 days
+  const noise = Math.sin(daysAgo * 1.1) * baseCount * 0.08;
+
+  const raw = Math.round(baseCount + driftFromPeak + noise);
+  return Math.max(1, raw); // never below 1
+}
+
 async function main() {
-  console.log('🌱 Starting database seed...\n');
+  console.log('🌱 Starting seed — 30-day historical snapshots\n');
 
-  try {
-    // Clear existing data
-    console.log('🗑️  Clearing existing data...');
-    await prisma.skill.deleteMany({});
-    await prisma.apiQuota.deleteMany({});
+  // Wipe existing data
+  await prisma.skill.deleteMany({});
+  await prisma.apiQuota.deleteMany({});
+  console.log('🗑️  Cleared existing records\n');
 
-    // Define job types (individual types + 'all' aggregate)
-    const jobTypes = ['fulltime', 'parttime', 'contract', 'internship', 'all'];
+  const jobTypes = ['fulltime', 'parttime', 'contract', 'internship', 'all'];
+  const DAYS = 30;
+  let total = 0;
 
-    // Generate 14 days of historical snapshots
-    console.log('📊 Creating 14-day historical snapshots...\n');
+  for (let day = DAYS; day >= 0; day--) {
+    const snapshotDate = getDaysAgo(day);
 
-    let totalSkillsCreated = 0;
+    for (const [roleId, skills] of Object.entries(SKILL_DATA)) {
+      for (const jobType of jobTypes) {
+        for (const skillData of skills) {
+          // Multipliers for each job type (relative to fulltime baseline)
+          const multipliers = { fulltime: 1.0, parttime: 0.7, contract: 0.6, internship: 0.4, all: 2.7 };
+          const m = multipliers[jobType];
 
-    // For each day in the past 14 days
-    for (let day = 14; day >= 0; day--) {
-      const snapshotDate = getDaysAgo(day);
-      const dayLabel = new Date(snapshotDate).toLocaleDateString();
+          const adjustedCount = Math.max(1, Math.round(
+            variedCount(skillData.count, skillData.trend, day) * m
+          ));
+          const totalForType = jobType === 'all' ? 200 : Math.round(50 * m);
 
-      // For each role
-      for (const [roleId, skills] of Object.entries(SKILL_DATA)) {
-        // For each job type
-        for (const jobType of jobTypes) {
-          // Create skill records for this role + job type on this day
-          for (const skillData of skills) {
-            let adjustedCount;
-            let totalForType;
-
-            if (jobType === 'all') {
-              // 'all' is the aggregate across all job types (100% + 70% + 60% + 40% = 270%)
-              adjustedCount = Math.round(skillData.count * 2.7);
-              totalForType = 200; // 50 * 2.7 ≈ 135, round to 200 for simplicity
-            } else {
-              // Vary counts by individual job type
-              const multiplier = {
-                fulltime: 1.0,      // 100%
-                parttime: 0.7,      // 70%
-                contract: 0.6,      // 60%
-                internship: 0.4     // 40%
-              }[jobType];
-
-              adjustedCount = Math.max(1, Math.round(skillData.count * multiplier));
-              totalForType = Math.round(50 * multiplier);
+          await prisma.skill.create({
+            data: {
+              role:    roleId,
+              skill:   skillData.skill,
+              count:   adjustedCount,
+              total:   totalForType,
+              jobType: jobType,
+              date:    snapshotDate
             }
-
-            await prisma.skill.create({
-              data: {
-                role: roleId,
-                skill: skillData.skill,
-                count: adjustedCount,
-                total: totalForType,
-                jobType: jobType,
-                date: snapshotDate
-              }
-            });
-            totalSkillsCreated++;
-          }
-        }
-
-        // Progress indicator
-        if (day % 3 === 0) {
-          console.log(`  ✓ ${dayLabel}: ${roleId} (5 job types including 'all' aggregate)`);
+          });
+          total++;
         }
       }
     }
 
-    console.log(
-      `\n✓ Created ${totalSkillsCreated} skill records (14 days × 7 roles × 8 skills × 5 job types)\n`
-    );
-
-    // Initialize API quota
-    console.log('📊 Initializing API quota...');
-    await prisma.apiQuota.create({
-      data: {
-        requestsRemain: 25,
-        jobsRemain: 250,
-        lastUpdated: new Date()
-      }
-    });
-
-    console.log('✓ API quota initialized: 25 requests, 250 jobs\n');
-
-    console.log('✅ Seed completed successfully!\n');
-  } catch (error) {
-    console.error('❌ Seed error:', error);
-    throw error;
-  } finally {
-    await prisma.$disconnect();
+    if (day % 5 === 0) {
+      console.log(`  ✓ Day -${day} seeded (${snapshotDate.toISOString().split('T')[0]})`);
+    }
   }
+
+  console.log(`\n✓ ${total} skill records created (${DAYS + 1} days × 7 roles × 8 skills × 5 job types)\n`);
+
+  // Initialise API quota tracker
+  await prisma.apiQuota.create({
+    data: { requestsRemain: 25, jobsRemain: 250, lastUpdated: new Date() }
+  });
+  console.log('✓ API quota initialised\n');
+  console.log('✅ Seed complete!');
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+main()
+  .catch(err => { console.error('❌ Seed failed:', err); process.exit(1); })
+  .finally(() => prisma.$disconnect());
