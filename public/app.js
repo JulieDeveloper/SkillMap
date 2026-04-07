@@ -1,27 +1,46 @@
-// SkillMap Frontend Application
-// Fetches data from API endpoints and renders interactive charts
+// SkillMap — V2 Frontend Application
 
-// Global state
+// ── Global State ─────────────────────────────────────────────────────────────
+
 let currentRole = 'uiux';
 let currentType = 'all';
-let skillsChart = null;
-let trendsChart = null;
-let quotaData = null;
+let currentView = 'market-demand';
+let trendsChart  = null;
+let currentSkillsData = null; // cache for bento + gap cross-reference
 
 const API_BASE = '/api';
 const LOCAL_STORAGE_KEY = 'skillmap_gap_checker';
 
-// ============================================================================
-// API Fetch Functions
-// ============================================================================
+// View metadata (title + subtitle per nav item)
+const VIEW_META = {
+  'market-demand': {
+    title: 'Market Demand',
+    subtitle: 'Real-time analysis of market demand and designer expertise.'
+  },
+  'skill-trend': {
+    title: 'Skill Trend Over Time',
+    subtitle: 'See how skill demand has shifted over the past 30 days.'
+  },
+  'gap-analysis': {
+    title: 'Gap Analysis',
+    subtitle: 'Check which in-demand skills you already have.'
+  }
+};
+
+// Tier thresholds — percentage of postings a skill appears in
+const TIER_HIGH   = 50; // ≥ 50%
+const TIER_MEDIUM = 20; // 20–49%
+// < 20% = low
+
+// ── API Helpers ───────────────────────────────────────────────────────────────
 
 async function fetchSkills(role, type) {
   try {
     const res = await fetch(`${API_BASE}/skills?role=${role}&type=${type}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
-  } catch (error) {
-    console.error('Error fetching skills:', error);
+  } catch (err) {
+    console.error('fetchSkills error:', err);
     return null;
   }
 }
@@ -31,192 +50,191 @@ async function fetchTrends(role) {
     const res = await fetch(`${API_BASE}/trends?role=${role}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
-  } catch (error) {
-    console.error('Error fetching trends:', error);
+  } catch (err) {
+    console.error('fetchTrends error:', err);
     return null;
   }
 }
 
-async function fetchQuota() {
-  try {
-    const res = await fetch(`${API_BASE}/quota`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.json();
-  } catch (error) {
-    console.error('Error fetching quota:', error);
-    return null;
-  }
+// ── Tier Classification ───────────────────────────────────────────────────────
+
+function getTier(percentage) {
+  if (percentage >= TIER_HIGH)   return 'high';
+  if (percentage >= TIER_MEDIUM) return 'medium';
+  return 'low';
 }
 
-// ============================================================================
-// UI Update Functions
-// ============================================================================
+// ── Bento Cards ───────────────────────────────────────────────────────────────
 
-async function updateStats() {
-  const skillsData = await fetchSkills(currentRole, currentType);
-
-  if (skillsData) {
-    // Update stats
-    const totalJobs = skillsData.total || 0;
-    const totalSkills = skillsData.skills?.length || 0;
-    const lastUpdated = new Date(skillsData.date).toLocaleDateString();
-
-    document.getElementById('stat-jobs').textContent = totalJobs;
-    document.getElementById('stat-skills').textContent = totalSkills;
-    document.getElementById('stat-refresh').textContent = lastUpdated;
-    document.getElementById('timestamp').textContent = `Last updated: ${skillsData.date}`;
-  }
+function updateBentoTopSkill(skills) {
+  const el = document.getElementById('bento-top-skill');
+  el.textContent = skills && skills.length > 0 ? skills[0].skill : '—';
 }
 
-async function renderSkillsChart() {
-  const container = document.getElementById('skills-chart');
-  const skillsData = await fetchSkills(currentRole, currentType);
+function updateBentoFastestGrowing(skills) {
+  // Without multi-snapshot delta data we use the second-ranked skill as a
+  // stand-in for "fastest growing" (consistent with seed data ordering).
+  const el = document.getElementById('bento-fastest-growing');
+  el.textContent = skills && skills.length > 1 ? skills[1].skill : '—';
+}
 
-  if (!skillsData || !skillsData.skills || skillsData.skills.length === 0) {
-    container.innerHTML = '<p class="error">No skills data available</p>';
+function updateBentoYourMatch() {
+  const checkboxes = document.querySelectorAll('.gap-checkbox');
+  const el = document.getElementById('bento-your-match');
+  if (checkboxes.length === 0) {
+    el.textContent = '—';
+    return;
+  }
+  const checked = Array.from(checkboxes).filter(cb => cb.checked).length;
+  const pct = Math.round((checked / checkboxes.length) * 100);
+  el.textContent = `${pct}%`;
+}
+
+// ── Market Demand View ────────────────────────────────────────────────────────
+
+async function renderMarketDemand() {
+  const container = document.getElementById('skills-bars');
+  const subtitle  = document.getElementById('market-demand-subtitle');
+
+  const data = await fetchSkills(currentRole, currentType);
+  currentSkillsData = data;
+
+  if (!data || !data.skills || data.skills.length === 0) {
+    container.innerHTML = '<p class="error">No skills data available.</p>';
     return;
   }
 
-  // Create horizontal bar chart
-  const skills = skillsData.skills;
-  const labels = skills.map((s) => s.skill);
-  const data = skills.map((s) => s.percentage);
+  const totalJobs = data.total || 0;
+  if (subtitle) {
+    subtitle.textContent = `Based on ${totalJobs.toLocaleString()} active job listings this month.`;
+  }
 
-  // Destroy existing chart if it exists
-  if (skillsChart) skillsChart.destroy();
+  updateBentoTopSkill(data.skills);
+  updateBentoFastestGrowing(data.skills);
 
-  const canvas = document.createElement('canvas');
   container.innerHTML = '';
-  container.appendChild(canvas);
 
-  skillsChart = new Chart(canvas, {
-    type: 'bar',
-    data: {
-      labels: labels,
-      datasets: [
-        {
-          label: 'Percentage (%)',
-          data: data,
-          backgroundColor: '#378ADD',
-          borderColor: '#2a5fa3',
-          borderWidth: 1
-        }
-      ]
-    },
-    options: {
-      indexAxis: 'y',
-      responsive: true,
-      maintainAspectRatio: true,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: function (context) {
-              return context.parsed.x + '%';
-            }
-          }
-        }
-      },
-      scales: {
-        x: {
-          beginAtZero: true,
-          max: 100,
-          ticks: {
-            callback: function (value) {
-              return value + '%';
-            }
-          }
-        }
-      }
-    }
+  data.skills.forEach(skill => {
+    // Use actual % of job postings if total is available, else fall back to
+    // the relative percentage the API already computed.
+    const pct = totalJobs > 0
+      ? Math.round((skill.count / totalJobs) * 100)
+      : skill.percentage;
+
+    const tier = getTier(pct);
+
+    const row = document.createElement('div');
+    row.className = 'bar-row';
+    row.innerHTML = `
+      <div class="bar-row-header">
+        <span class="bar-skill-name">${skill.skill}</span>
+        <span class="bar-skill-caption">${skill.skill} appears in ${pct}% of postings</span>
+      </div>
+      <div class="bar-track">
+        <div class="bar-fill tier-${tier}" style="width: ${pct}%"></div>
+      </div>
+    `;
+    container.appendChild(row);
   });
 }
 
-async function renderTrendsChart() {
-  const container = document.getElementById('trends-chart');
-  const trendsData = await fetchTrends(currentRole);
+// ── Skill Trend Over Time View ────────────────────────────────────────────────
 
-  if (!trendsData || !trendsData.trends || trendsData.trends.length === 0) {
-    container.innerHTML = '<p class="error">No trends data available</p>';
+async function renderTrends() {
+  const wrapper = document.getElementById('trends-chart-wrapper');
+  const data = await fetchTrends(currentRole);
+
+  if (!data || !data.trends || data.trends.length === 0) {
+    wrapper.innerHTML = '<p class="error">No trends data available.</p>';
     return;
   }
 
-  // Prepare data for line chart
-  const trends = trendsData.trends;
-  const dates = trends.map((t) => t.date);
+  // Destroy existing chart
+  if (trendsChart) {
+    trendsChart.destroy();
+    trendsChart = null;
+  }
 
-  // Get all unique skills across all dates
-  const allSkills = new Set();
-  trends.forEach((t) => {
-    t.skills.forEach((s) => allSkills.add(s.skill));
-  });
+  const trends = data.trends;
+  const dates  = trends.map(t => t.date);
 
-  // Create dataset for each skill
-  const datasets = Array.from(allSkills).map((skillName, index) => {
-    const colors = [
-      '#378ADD', // blue
-      '#1D9E75', // teal
-      '#E67E22', // orange
-      '#9B59B6', // purple
-      '#E74C3C'  // red
-    ];
-    const color = colors[index % colors.length];
+  // Collect top 5 skills from the most recent snapshot
+  const latestSkills = trends[trends.length - 1]?.skills || [];
+  const topSkillNames = latestSkills.slice(0, 5).map(s => s.skill);
 
-    const data = trends.map((t) => {
-      const skillData = t.skills.find((s) => s.skill === skillName);
-      return skillData ? skillData.percentage : 0;
+  // Palette aligned to design system — distinct but warm
+  const palette = ['#2e2f2d', '#10b981', '#f59e0b', '#9b59b6', '#ef4444'];
+
+  const datasets = topSkillNames.map((skillName, i) => {
+    const color = palette[i % palette.length];
+    const values = trends.map(t => {
+      const s = t.skills.find(sk => sk.skill === skillName);
+      return s ? s.percentage : 0;
     });
-
     return {
       label: skillName,
-      data: data,
+      data: values,
       borderColor: color,
-      backgroundColor: `${color}20`,
+      backgroundColor: `${color}18`,
       tension: 0.4,
       fill: false,
       pointRadius: 4,
       pointBackgroundColor: color,
-      pointBorderColor: '#fff',
+      pointBorderColor: '#f7f6f3',
       pointBorderWidth: 2
     };
   });
 
-  // Destroy existing chart if it exists
-  if (trendsChart) trendsChart.destroy();
-
+  wrapper.innerHTML = '';
   const canvas = document.createElement('canvas');
-  container.innerHTML = '';
-  container.appendChild(canvas);
+  wrapper.appendChild(canvas);
 
   trendsChart = new Chart(canvas, {
     type: 'line',
-    data: {
-      labels: dates,
-      datasets: datasets
-    },
+    data: { labels: dates, datasets },
     options: {
       responsive: true,
       maintainAspectRatio: true,
       plugins: {
         legend: {
-          position: 'top'
+          position: 'top',
+          labels: {
+            font: { family: 'Inter', size: 13, weight: '500' },
+            color: '#2e2f2d',
+            usePointStyle: true,
+            pointStyleWidth: 10,
+            boxHeight: 8,
+            padding: 20
+          }
         },
         tooltip: {
+          backgroundColor: '#2e2f2d',
+          titleFont: { family: 'Plus Jakarta Sans', size: 13, weight: '700' },
+          bodyFont: { family: 'Inter', size: 13 },
+          padding: 12,
+          cornerRadius: 12,
           callbacks: {
-            label: function (context) {
-              return context.dataset.label + ': ' + context.parsed.y + '%';
-            }
+            label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y}%`
           }
         }
       },
       scales: {
+        x: {
+          grid: { color: '#e8e8e5', drawBorder: false },
+          ticks: {
+            font: { family: 'Inter', size: 12 },
+            color: '#9a9a97',
+            maxTicksLimit: 8
+          }
+        },
         y: {
           beginAtZero: true,
           max: 100,
+          grid: { color: '#e8e8e5', drawBorder: false },
           ticks: {
-            callback: function (value) {
-              return value + '%';
-            }
+            font: { family: 'Inter', size: 12 },
+            color: '#9a9a97',
+            callback: v => v + '%'
           }
         }
       }
@@ -224,149 +242,204 @@ async function renderTrendsChart() {
   });
 }
 
-function renderGapChecker() {
-  const skillsData = fetchSkills(currentRole, currentType).then((data) => {
-    if (!data || !data.skills || data.skills.length === 0) {
-      document.getElementById('gap-checker').innerHTML =
-        '<p class="error">No skills data available</p>';
-      return;
-    }
+// ── Gap Analysis View ─────────────────────────────────────────────────────────
 
-    const container = document.getElementById('gap-checker');
-    container.innerHTML = '';
+async function renderGapChecker() {
+  const checkerEl = document.getElementById('gap-checker');
 
-    const skills = data.skills.slice(0, 10); // Top 10 skills
-    const savedState = getSavedGapCheckerState(currentRole);
+  // Re-use cached data if available, otherwise fetch
+  const data = currentSkillsData || await fetchSkills(currentRole, currentType);
+  currentSkillsData = data;
 
-    const list = document.createElement('div');
-    list.className = 'gap-list';
+  if (!data || !data.skills || data.skills.length === 0) {
+    checkerEl.innerHTML = '<p class="error">No skills data available.</p>';
+    return;
+  }
 
-    skills.forEach((skill) => {
-      const item = document.createElement('div');
-      item.className = 'gap-item';
+  const savedState = getSavedState(currentRole);
+  const totalJobs  = data.total || 0;
 
-      const checkbox = document.createElement('input');
-      checkbox.type = 'checkbox';
-      checkbox.className = 'gap-checkbox';
-      checkbox.value = skill.skill;
-      checkbox.checked = savedState[skill.skill] || false;
-      checkbox.addEventListener('change', () => {
-        updateGapScore();
-        saveGapCheckerState();
-      });
+  checkerEl.innerHTML = '';
+  const list = document.createElement('div');
+  list.className = 'gap-list';
 
-      const label = document.createElement('label');
-      label.className = 'gap-label';
-      label.appendChild(checkbox);
-      label.appendChild(document.createTextNode(skill.skill));
+  data.skills.forEach(skill => {
+    const pct  = totalJobs > 0 ? Math.round((skill.count / totalJobs) * 100) : skill.percentage;
+    const item = document.createElement('div');
+    item.className = 'gap-item';
 
-      item.appendChild(label);
-      list.appendChild(item);
+    const id       = `gap-skill-${skill.skill.replace(/\s+/g, '-')}`;
+    const checkbox = document.createElement('input');
+    checkbox.type      = 'checkbox';
+    checkbox.className = 'gap-checkbox';
+    checkbox.id        = id;
+    checkbox.value     = skill.skill;
+    checkbox.dataset.percentage = pct;
+    checkbox.checked   = savedState[skill.skill] || false;
+
+    checkbox.addEventListener('change', () => {
+      updateGapScore();
+      updateRecommendations(data.skills, data.total || 0);
+      updateBentoYourMatch();
+      saveState(currentRole);
     });
 
-    container.appendChild(list);
-    updateGapScore();
+    const label = document.createElement('label');
+    label.className  = 'gap-label';
+    label.htmlFor    = id;
+    label.textContent = skill.skill;
+    label.prepend(checkbox);
+
+    item.appendChild(label);
+    list.appendChild(item);
   });
+
+  checkerEl.appendChild(list);
+  updateGapScore();
+  updateRecommendations(data.skills, totalJobs);
+  updateBentoYourMatch();
 }
 
 function updateGapScore() {
   const checkboxes = document.querySelectorAll('.gap-checkbox');
-  const checked = Array.from(checkboxes).filter((cb) => cb.checked).length;
-  const total = checkboxes.length;
-  const percentage = total > 0 ? Math.round((checked / total) * 100) : 0;
+  const scoreEl    = document.getElementById('gap-score');
+  if (!checkboxes.length) { scoreEl.textContent = ''; return; }
 
-  document.getElementById('gap-score').innerHTML = `
-    <strong>${checked} of ${total} skills covered (${percentage}%)</strong>
-  `;
+  const checked = Array.from(checkboxes).filter(cb => cb.checked).length;
+  const total   = checkboxes.length;
+  const pct     = Math.round((checked / total) * 100);
+
+  scoreEl.textContent = `${checked} of ${total} skills covered — ${pct}% match`;
 }
 
-function getSavedGapCheckerState(role) {
+function updateRecommendations(skills, totalJobs) {
+  const recsEl     = document.getElementById('gap-recommendations');
+  const checkboxes = document.querySelectorAll('.gap-checkbox');
+
+  // Build a set of checked skill names
+  const checked = new Set(
+    Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value)
+  );
+
+  // Unchecked skills, ordered by in-demand (original sort order = count desc)
+  const unchecked = skills.filter(s => !checked.has(s.skill));
+
+  if (unchecked.length === 0) {
+    recsEl.innerHTML = '<p class="gap-recs-empty">You have all the top skills for this role — great work.</p>';
+    return;
+  }
+
+  recsEl.innerHTML = '';
+  const list = document.createElement('div');
+  list.className = 'gap-recs-list';
+
+  unchecked.forEach(skill => {
+    const pct  = totalJobs > 0 ? Math.round((skill.count / totalJobs) * 100) : skill.percentage;
+    const tier = getTier(pct);
+
+    const item = document.createElement('div');
+    item.className = 'rec-item';
+    item.innerHTML = `
+      <span class="rec-skill-name">${skill.skill}</span>
+      <div class="rec-bar-track">
+        <div class="rec-bar-fill tier-${tier}" style="width:${pct}%"></div>
+      </div>
+      <span class="rec-badge tier-${tier}">${tier}</span>
+    `;
+    list.appendChild(item);
+  });
+
+  recsEl.appendChild(list);
+}
+
+// ── LocalStorage ──────────────────────────────────────────────────────────────
+
+function getSavedState(role) {
   const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY}_${role}`);
   return saved ? JSON.parse(saved) : {};
 }
 
-function saveGapCheckerState() {
+function saveState(role) {
   const checkboxes = document.querySelectorAll('.gap-checkbox');
   const state = {};
-
-  checkboxes.forEach((cb) => {
-    state[cb.value] = cb.checked;
-  });
-
-  localStorage.setItem(`${LOCAL_STORAGE_KEY}_${currentRole}`, JSON.stringify(state));
+  checkboxes.forEach(cb => { state[cb.value] = cb.checked; });
+  localStorage.setItem(`${LOCAL_STORAGE_KEY}_${role}`, JSON.stringify(state));
 }
 
-async function updateQuotaStatus() {
-  const quota = await fetchQuota();
-  if (quota) {
-    const quotaInfo = `
-      Requests: ${quota.requestsRemain}/25 remaining (${quota.requestsUsed} used) •
-      Jobs: ${quota.jobsRemain}/250 remaining (${quota.jobsUsed} used) •
-      Last updated: ${new Date(quota.lastUpdated).toLocaleString()}
-    `;
-    document.getElementById('quota-info').textContent = quotaInfo;
-  }
+// ── Navigation ────────────────────────────────────────────────────────────────
+
+function switchView(viewId) {
+  currentView = viewId;
+
+  // Update nav links
+  document.querySelectorAll('.nav-link').forEach(link => {
+    link.classList.toggle('active', link.dataset.view === viewId);
+  });
+
+  // Update view heading
+  const meta = VIEW_META[viewId] || {};
+  document.getElementById('view-title').textContent    = meta.title    || '';
+  document.getElementById('view-subtitle').textContent = meta.subtitle || '';
+
+  // Show/hide view panels
+  document.querySelectorAll('.view-content').forEach(panel => {
+    panel.classList.remove('active');
+  });
+  document.getElementById(`view-${viewId}`)?.classList.add('active');
+
+  // Render content for the activated view
+  if (viewId === 'market-demand')  renderMarketDemand();
+  if (viewId === 'skill-trend')    renderTrends();
+  if (viewId === 'gap-analysis')   renderGapChecker();
 }
 
-// ============================================================================
-// Event Listeners
-// ============================================================================
+// ── Event Listeners ───────────────────────────────────────────────────────────
 
-function setupEventListeners() {
-  // Role selector
-  document.getElementById('role-select').addEventListener('change', (e) => {
-    currentRole = e.target.value;
-    renderSkillsChart();
-    renderTrendsChart();
-    renderGapChecker();
-    updateStats();
+function setupListeners() {
+  document.getElementById('role-select').addEventListener('change', e => {
+    currentRole       = e.target.value;
+    currentSkillsData = null; // invalidate cache on role change
+    if (currentView === 'market-demand') renderMarketDemand();
+    if (currentView === 'skill-trend')   renderTrends();
+    if (currentView === 'gap-analysis')  renderGapChecker();
   });
 
-  // Job type selector
-  document.getElementById('type-select').addEventListener('change', (e) => {
-    currentType = e.target.value;
-    renderSkillsChart();
-    updateStats();
+  document.getElementById('type-select').addEventListener('change', e => {
+    currentType       = e.target.value;
+    currentSkillsData = null;
+    if (currentView === 'market-demand') renderMarketDemand();
+    if (currentView === 'gap-analysis')  renderGapChecker();
   });
 
-  // Tab buttons
-  document.querySelectorAll('.tab-button').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
-      const tabName = e.target.dataset.tab;
-
-      // Update active button
-      document.querySelectorAll('.tab-button').forEach((b) => b.classList.remove('active'));
-      e.target.classList.add('active');
-
-      // Update active tab
-      document.querySelectorAll('.tab-content').forEach((tab) => tab.classList.remove('active'));
-      document.getElementById(`${tabName}-tab`).classList.add('active');
-
-      // Render chart for this tab
-      if (tabName === 'skills') {
-        renderSkillsChart();
-      } else if (tabName === 'trends') {
-        renderTrendsChart();
-      } else if (tabName === 'gap') {
-        renderGapChecker();
-      }
+  document.querySelectorAll('.nav-link').forEach(link => {
+    link.addEventListener('click', e => {
+      e.preventDefault();
+      switchView(link.dataset.view);
     });
   });
 }
 
-// ============================================================================
-// Initialization
-// ============================================================================
+// ── Init ──────────────────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', async () => {
-  console.log('SkillMap frontend initializing...');
+  setupListeners();
 
-  setupEventListeners();
+  // Pre-load gap checker state so "Your Match" bento reflects stored data
+  // without requiring the user to navigate there first.
+  const savedData = await fetchSkills(currentRole, currentType);
+  if (savedData?.skills) {
+    currentSkillsData = savedData;
+    updateBentoTopSkill(savedData.skills);
+    updateBentoFastestGrowing(savedData.skills);
 
-  // Load initial data
-  await updateStats();
-  await renderSkillsChart();
-  await updateQuotaStatus();
+    // Temporarily inject hidden checkboxes to compute "Your Match"
+    const savedState = getSavedState(currentRole);
+    const total   = savedData.skills.length;
+    const checked = savedData.skills.filter(s => savedState[s.skill]).length;
+    const pct     = total > 0 ? Math.round((checked / total) * 100) : 0;
+    document.getElementById('bento-your-match').textContent = `${pct}%`;
+  }
 
-  console.log('SkillMap frontend ready!');
+  // Render initial view
+  renderMarketDemand();
 });

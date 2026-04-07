@@ -3,110 +3,208 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SkillMap — Design Skills in Demand</title>
+  <title>SkillMap</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <div id="app" class="container">
-    <!-- Header Section -->
-    <header class="header">
-      <h1 class="title">SkillMap</h1>
-      <p class="tagline">Skills in demand, updated daily</p>
-      <p class="timestamp" id="timestamp">Last updated: —</p>
-    </header>
+  <div class="app-shell">
 
-    <!-- Stats Row -->
-    <section class="stats">
-      <div class="stat-card">
-        <div class="stat-label">Total Job Postings</div>
-        <div class="stat-value" id="stat-jobs">0</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Skills Tracked</div>
-        <div class="stat-value" id="stat-skills">0</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Last Refresh</div>
-        <div class="stat-value" id="stat-refresh">—</div>
-      </div>
-    </section>
+    <!-- ── Sidebar ─────────────────────────────────── -->
+    <aside class="sidebar">
 
-    <!-- Controls -->
-    <section class="controls">
-      <div class="control-group">
-        <label for="role-select">Role:</label>
-        <select id="role-select">
-          <option value="uiux">UI/UX Designer</option>
-          <option value="product">Product Designer</option>
-          <option value="graphic">Graphic Designer</option>
-          <option value="experiential">Experiential Designer</option>
-          <option value="digital">Digital Designer</option>
-          <option value="visual">Visual Designer</option>
-          <option value="multidisciplinary">Multidisciplinary Designer</option>
-        </select>
+      <div class="sidebar-logo">
+        <div class="logo-icon">
+          <svg width="22" height="14" viewBox="0 0 22 14" fill="none">
+            <path d="M1 13L7 7L11 11L21 1" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <span class="logo-text">SkillMap</span>
       </div>
 
-      <div class="control-group">
-        <label for="type-select">Job Type:</label>
-        <select id="type-select">
-          <option value="all">All Job Types</option>
-          <option value="fulltime">Full-time</option>
-          <option value="parttime">Part-time</option>
-          <option value="contract">Contract</option>
-          <option value="internship">Internship</option>
-        </select>
-      </div>
-    </section>
-
-    <!-- Tabs -->
-    <section class="tabs">
-      <div class="tab-buttons">
-        <button class="tab-button active" data-tab="skills">Skills Frequency</button>
-        <button class="tab-button" data-tab="trends">Trend Over Time</button>
-        <button class="tab-button" data-tab="gap">Skill Gap Checker</button>
-      </div>
-
-      <!-- Tab 1: Skills Frequency -->
-      <div id="skills-tab" class="tab-content active">
-        <h2>Top 10 Skills in Demand</h2>
-        <div id="skills-chart" class="chart-container">
-          <div class="loading">Loading skills data...</div>
+      <div class="sidebar-filters">
+        <div class="filter-select-wrapper">
+          <select id="role-select">
+            <option value="uiux">UI/UX Designer</option>
+            <option value="product">Product Designer</option>
+            <option value="graphic">Graphic Designer</option>
+            <option value="experiential">Experiential Designer</option>
+            <option value="digital">Digital Designer</option>
+            <option value="visual">Visual Designer</option>
+            <option value="multidisciplinary">Multidisciplinary Designer</option>
+          </select>
+          <svg class="select-arrow" width="21" height="21" viewBox="0 0 21 21" fill="none">
+            <path d="M5.5 8L10.5 13L15.5 8" stroke="#2E2F2D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="filter-select-wrapper">
+          <select id="type-select">
+            <option value="all">All Job Types</option>
+            <option value="fulltime">Full-time</option>
+            <option value="parttime">Part-time</option>
+            <option value="contract">Contract</option>
+            <option value="internship">Internship</option>
+          </select>
+          <svg class="select-arrow" width="21" height="21" viewBox="0 0 21 21" fill="none">
+            <path d="M5.5 8L10.5 13L15.5 8" stroke="#2E2F2D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
         </div>
       </div>
 
-      <!-- Tab 2: Trend Over Time -->
-      <div id="trends-tab" class="tab-content">
-        <h2>Skill Trends (Past 30 Days)</h2>
-        <div id="trends-chart" class="chart-container">
-          <div class="loading">Loading trends data...</div>
+      <nav class="sidebar-nav">
+        <a class="nav-link active" data-view="market-demand" href="#">
+          <svg width="20" height="12" viewBox="0 0 20 12" fill="none">
+            <path d="M1 11L6 6L10 9L19 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Market Demand
+        </a>
+        <a class="nav-link" data-view="skill-trend" href="#">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M2 14L7 9L11 12L18 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M2 18H18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          Skill Trend Over Time
+        </a>
+        <a class="nav-link" data-view="gap-analysis" href="#">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <rect x="1" y="1" width="16" height="16" rx="3" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M5 9L7.5 11.5L13 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Gap Analysis
+        </a>
+      </nav>
+
+    </aside>
+
+    <!-- ── Main Content ────────────────────────────── -->
+    <div class="main-content">
+
+      <!-- Sticky top nav bar -->
+      <header class="top-nav">
+        <div class="top-nav-actions">
+          <button class="icon-btn" aria-label="Notifications">
+            <svg width="16" height="19" viewBox="0 0 16 19" fill="none">
+              <path d="M8 1C5.24 1 3 3.24 3 6V11L1 13V14H15V13L13 11V6C13 3.24 10.76 1 8 1Z" stroke="#2E2F2D" stroke-width="1.5" stroke-linejoin="round"/>
+              <path d="M6 14C6 15.1 6.9 16 8 16C9.1 16 10 15.1 10 14" stroke="#2E2F2D" stroke-width="1.5"/>
+              <circle cx="12" cy="4" r="3.5" fill="#B31B25" stroke="white" stroke-width="1"/>
+            </svg>
+          </button>
+          <button class="icon-btn" aria-label="Settings">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <circle cx="10" cy="10" r="2.5" stroke="#2E2F2D" stroke-width="1.5"/>
+              <path d="M10 2v1.5M10 16.5V18M2 10h1.5M16.5 10H18M3.93 3.93l1.06 1.06M15.01 15.01l1.06 1.06M3.93 16.07l1.06-1.06M15.01 4.99l1.06-1.06" stroke="#2E2F2D" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </button>
+          <div class="user-avatar"></div>
         </div>
-      </div>
+      </header>
 
-      <!-- Tab 3: Skill Gap Checker -->
-      <div id="gap-tab" class="tab-content">
-        <h2>Check Your Skills</h2>
-        <div id="gap-checker" class="gap-container">
-          <div class="loading">Loading skills checklist...</div>
+      <!-- Scrollable content -->
+      <div class="content-area">
+
+        <!-- View heading (updates per nav) -->
+        <div class="view-header">
+          <div>
+            <h1 id="view-title">Market Demand</h1>
+            <p id="view-subtitle">Real-time analysis of market demand and designer expertise.</p>
+          </div>
         </div>
-        <div id="gap-score" class="gap-score">—</div>
+
+        <!-- Bento metric cards (always visible) -->
+        <div class="bento-cards">
+          <div class="bento-card bento-neutral">
+            <div class="bento-card-top">
+              <svg width="22" height="25" viewBox="0 0 22 25" fill="none">
+                <path d="M11 2L3 8V23H19V8L11 2Z" stroke="rgba(102,69,78,0.8)" stroke-width="1.5" stroke-linejoin="round"/>
+                <path d="M7.5 23V15.5H14.5V23" stroke="rgba(102,69,78,0.8)" stroke-width="1.5" stroke-linejoin="round"/>
+              </svg>
+              <span class="bento-label">Top Skill</span>
+            </div>
+            <div class="bento-value" id="bento-top-skill">—</div>
+          </div>
+          <div class="bento-card bento-pink">
+            <div class="bento-card-top">
+              <svg width="20" height="25" viewBox="0 0 20 25" fill="none">
+                <path d="M10 3V20" stroke="rgba(102,69,78,0.8)" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M4 9L10 3L16 9" stroke="rgba(102,69,78,0.8)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M2 23H18" stroke="rgba(102,69,78,0.8)" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+              <span class="bento-label">Fastest Growing</span>
+            </div>
+            <div class="bento-value" id="bento-fastest-growing">—</div>
+          </div>
+          <div class="bento-card bento-gray">
+            <div class="bento-card-top">
+              <svg width="26" height="25" viewBox="0 0 26 25" fill="none">
+                <circle cx="13" cy="12.5" r="10" stroke="rgba(102,69,78,0.8)" stroke-width="1.5"/>
+                <path d="M8.5 12.5L11.5 15.5L17.5 9.5" stroke="rgba(102,69,78,0.8)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span class="bento-label">Your Match</span>
+            </div>
+            <div class="bento-value" id="bento-your-match">—</div>
+          </div>
+        </div>
+
+        <!-- ── View: Market Demand ── -->
+        <div id="view-market-demand" class="view-content active">
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <div class="chart-card-meta">
+                <h3>Skill Frequency Distribution</h3>
+                <p id="market-demand-subtitle">Based on active job listings this month.</p>
+              </div>
+              <div class="tier-legend">
+                <div class="legend-item"><span class="legend-dot" style="background:#10b981"></span>High</div>
+                <div class="legend-item"><span class="legend-dot" style="background:#f59e0b"></span>Medium</div>
+                <div class="legend-item"><span class="legend-dot" style="background:#ef4444"></span>Low</div>
+              </div>
+            </div>
+            <div id="skills-bars" class="bar-chart">
+              <p class="loading">Loading skills data...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── View: Skill Trend Over Time ── -->
+        <div id="view-skill-trend" class="view-content">
+          <div class="chart-card">
+            <div id="trends-chart-wrapper" class="trends-chart-wrapper">
+              <p class="loading">Loading trends data...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── View: Gap Analysis ── -->
+        <div id="view-gap-analysis" class="view-content">
+          <div class="gap-layout">
+            <div class="chart-card gap-checklist-card">
+              <h3 class="gap-section-title">Skills Checklist</h3>
+              <div id="gap-checker">
+                <p class="loading">Loading skills...</p>
+              </div>
+              <div id="gap-score" class="gap-score-display"></div>
+            </div>
+            <div class="chart-card gap-recs-card">
+              <h3 class="gap-section-title">Recommended Next Step</h3>
+              <div id="gap-recommendations">
+                <p class="gap-recs-empty">Complete the checklist to see recommendations.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+          <p>Data source: <strong>Fantastic.jobs</strong> via RapidAPI</p>
+        </footer>
+
       </div>
-    </section>
-
-    <!-- API Quota Status (Debug) -->
-    <section class="quota-status">
-      <h3>API Quota Status</h3>
-      <p id="quota-info">Loading quota...</p>
-    </section>
-
-    <!-- Footer -->
-    <footer class="footer">
-      <p>Data source: <strong>Fantastic.jobs</strong> via RapidAPI</p>
-    </footer>
+    </div>
   </div>
 
-  <!-- Chart.js library -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- App script -->
   <script src="/app.js"></script>
 </body>
 </html>
